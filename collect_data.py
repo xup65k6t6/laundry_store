@@ -26,7 +26,6 @@ def get_chrome_driver():
 def get_data(driver, conn):
     start_y = 2023
     start_m = 11
-    # dfs = []
     for y, m in get_all_year_months(start_year= start_y, start_month= start_m):
         start_date, end_date = get_first_and_last_dates(y, m)
         # 3. select by month 
@@ -43,18 +42,9 @@ def get_data(driver, conn):
         for date in get_all_dates(start_date, end_date):
             if date not in str(soup) or date in cached_date:
                 continue
-            # simple retry
-            # retry_cnt_down = 3
-            # while retry_cnt_down > 0:
-                # try:
             wait = WebDriverWait(driver = driver,timeout= 20, poll_frequency=2)
             element = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'td[title="{date}"]')))
             element.click()
-                # except Exception as e:
-                #     print(f"Err: {e} at line {e.__traceback__.tb_lineno}")
-                #     retry_cnt_down -= 1
-                #     time.sleep(5)
-            # driver.find_element(By.CSS_SELECTOR, f'td[title="{date}"]').click()
             time.sleep(5)
             soup = BeautifulSoup(driver.page_source, "html.parser")
             table = soup.find('table', id = "detailGrid")
@@ -72,15 +62,12 @@ def get_data(driver, conn):
             # Create a Pandas DataFrame
             df = pd.DataFrame(data, columns=['Time', 'Equipment', 'Channel', 'Amount'])
             df['Time'] = pd.to_datetime(f'{date} ' + df['Time'], format='%Y/%m/%d %H:%M')
-            # dfs.append(df) # <TODO> write into database here to prevent using much memory
             df.to_sql('sales_data', conn, if_exists='append', index=False)
             conn.commit()
             driver.find_element(By.CSS_SELECTOR, 'a[aria-label="Close"]').click()
             print(f"Saved data on {date}")
             time.sleep(5)
 
-        # concatenate dfs 
-        # df = pd.concat(dfs)
 
     # 6. Don't forget to log out (menu-logout-list logout)
     driver.find_element(By.CSS_SELECTOR, '.menu-icon').click()
@@ -143,7 +130,6 @@ else:
     cached_date = []
     print("Table 'sales_data' does not exist. Skipping the operation.")
 
-# conn.close()
 try:
     get_data(driver=driver, conn= conn)
 except Exception as e:
