@@ -12,10 +12,17 @@ def read_df_from_db(db_path, table_name= 'sales_data'):
     conn.close()
     return df
 
+def save_df_to_db(df, db_path, table_name= 'table'):
+    conn = sqlite3.connect(db_path)
+    df.to_sql(table_name, conn, if_exists='replace', index=False)
+    print(f"Data saved to {db_path}. Table {table_name}")
+    conn.close()
+
 def db2excel(excel_path:str, db_path: str = None, df:pd.DataFrame = None ):
     if df is None:
         df = read_df_from_db(db_path, 'sales_data')
     df.to_excel(excel_path, sheet_name='Sheet1', index=False, )
+    print(f"Data saved to {excel_path}")
 
 
 def add_date_columns(df:pd.DataFrame):
@@ -82,7 +89,7 @@ def clean_equipment_column(df):
 def main():
     db_path = 'data/database.db'
     table_name = 'sales_data'
-    
+
     df = read_df_from_db(db_path, table_name)
     db2excel(excel_path = 'data/raw_sales_data.xlsx', df = df)
     df[['Amount', 'Unit']] = df['Amount'].str.extract('(-?\d+)(\D+)') # split unit
@@ -90,6 +97,8 @@ def main():
     df = add_date_columns(df)
     df = clean_equipment_column(df)
     db2excel(excel_path = 'data/clean_sales_data.xlsx', df = df)
+    save_df_to_db(df = df, db_path = db_path, table_name = "clean_sales_data")
+    print('Data cleaning completed.')
 
 if __name__ == "__main__":
     main()
