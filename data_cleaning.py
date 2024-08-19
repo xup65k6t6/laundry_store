@@ -24,6 +24,12 @@ def db2excel(excel_path:str, db_path: str = None, df:pd.DataFrame = None ):
     df.to_excel(excel_path, sheet_name='Sheet1', index=False, )
     print(f"Data saved to {excel_path}")
 
+def db2csv(csv_path:str, db_path: str = None, df:pd.DataFrame = None):
+    if df is None:
+        df = read_df_from_db(db_path, 'sales_data')
+    df.to_csv(csv_path, index=False)
+    print(f"Data saved to {csv_path}")
+
 
 def add_date_columns(df:pd.DataFrame):
     """
@@ -92,11 +98,13 @@ def main():
 
     df = read_df_from_db(db_path, table_name)
     db2excel(excel_path = 'data/raw_sales_data.xlsx', df = df)
+    db2csv(csv_path = 'data/raw_sales_data.csv', df = df)
     df[['Amount', 'Unit']] = df['Amount'].str.extract('(-?\d+)(\D+)') # split unit
     df = correct_datatypes(df, numeric_colmns= ['Amount'], date_columns= ['Time'])
     df = add_date_columns(df)
     df = clean_equipment_column(df)
     db2excel(excel_path = 'data/clean_sales_data.xlsx', df = df)
+    db2csv(csv_path = 'data/clean_sales_data.csv', df = df)
     save_df_to_db(df = df, db_path = db_path, table_name = "clean_sales_data")
     print('Data cleaning completed.')
 
