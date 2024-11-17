@@ -82,7 +82,7 @@ def get_data(driver, conn):
 
 
 def main(db_path):
-
+    global cached_date
     my_username = os.getenv('USERNAME')
     my_password = os.getenv('PASSWORD')
     url = os.getenv('LOGIN_URL')
