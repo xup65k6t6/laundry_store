@@ -11,8 +11,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
-from util.time_select import get_first_and_last_dates, get_all_dates, get_all_year_months
 from dotenv import load_dotenv
+import sys
+from pathlib import Path
+# Dynamically find the project root and add it to sys.path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
+from util.time_select import get_first_and_last_dates, get_all_dates, get_all_year_months
 
 load_dotenv()
 
@@ -76,66 +81,72 @@ def get_data(driver, conn):
     driver.find_element(By.CLASS_NAME, "k-button.k-primary").click()
 
 
-my_username = os.getenv('USERNAME')
-my_password = os.getenv('PASSWORD')
-url = os.getenv('LOGIN_URL')
-save_path = os.path.join(os.getcwd(), 'data')
-db_file = os.path.join(save_path,'database.db')
+def main(db_path):
 
-driver = get_chrome_driver()
-driver.get(url)
-# driver.maximize_window()
-print(driver.title)
+    my_username = os.getenv('USERNAME')
+    my_password = os.getenv('PASSWORD')
+    url = os.getenv('LOGIN_URL')
+    # save_path = os.path.join(os.getcwd(), 'data')
+    # db_file = os.path.join(save_path,'database.db')
+    db_file = db_path
 
-# Find and fill in the login form
-username = driver.find_element(By.NAME, 'userId') 
-password = driver.find_element(By.NAME, "password") 
+    driver = get_chrome_driver()
+    driver.get(url)
+    # driver.maximize_window()
+    print(driver.title)
 
-username.send_keys(my_username) 
-password.send_keys(my_password) 
+    # Find and fill in the login form
+    username = driver.find_element(By.NAME, 'userId') 
+    password = driver.find_element(By.NAME, "password") 
 
-# log in
-password.send_keys(Keys.RETURN)
-print('Logged In')
-# Wait for a few seconds to ensure the page loads
-time.sleep(5)
+    username.send_keys(my_username) 
+    password.send_keys(my_password) 
 
-print(driver.current_url)
-# Now that you're logged in, you can scrape data using BeautifulSoup
-soup = BeautifulSoup(driver.page_source, "html.parser")
+    # log in
+    password.send_keys(Keys.RETURN)
+    print('Logged In')
+    # Wait for a few seconds to ensure the page loads
+    time.sleep(5)
 
-# Your scraping code here (e.g., find and extract data from the soup)
+    print(driver.current_url)
+    # Now that you're logged in, you can scrape data using BeautifulSoup
+    soup = BeautifulSoup(driver.page_source, "html.parser")
 
-# 1. go into menu-icon
-driver.find_element(By.CSS_SELECTOR, '.menu-icon').click()
-time.sleep(3)
-# 2. go to revenue page
-driver.find_element(By.CSS_SELECTOR, 'div[href="/owner/revenue"]').click()
-time.sleep(3)
-print(driver.current_url)
+    # Your scraping code here (e.g., find and extract data from the soup)
 
-# cache from database by date
-# save all dates from datebase, list unique dates, exclude from scarping
-conn = sqlite3.connect(db_file)
-# Check if the table 'sales_data' exists
-cursor = conn.cursor()
-cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sales_data'")
-table_exists = cursor.fetchone() is not None
-if table_exists:
-    db_df = pd.read_sql(""" SELECT * FROM sales_data """,
-                        con=conn,
-                        parse_dates='Time')
-    cached_date = db_df['Time'].dt.strftime("%Y/%m/%d").unique().tolist()
-else:
-    cached_date = []
-    print("Table 'sales_data' does not exist. Skipping the operation.")
+    # 1. go into menu-icon
+    driver.find_element(By.CSS_SELECTOR, '.menu-icon').click()
+    time.sleep(3)
+    # 2. go to revenue page
+    driver.find_element(By.CSS_SELECTOR, 'div[href="/owner/revenue"]').click()
+    time.sleep(3)
+    print(driver.current_url)
 
-try:
-    get_data(driver=driver, conn= conn)
-except Exception as e:
-    print(f"Err: {e} at line {e.__traceback__.tb_lineno}")
-    pass
-finally:
-    conn.close()
-    # Close the browser
-    driver.quit()
+    # cache from database by date
+    # save all dates from datebase, list unique dates, exclude from scarping
+    conn = sqlite3.connect(db_file)
+    # Check if the table 'sales_data' exists
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sales_data'")
+    table_exists = cursor.fetchone() is not None
+    if table_exists:
+        db_df = pd.read_sql(""" SELECT * FROM sales_data """,
+                            con=conn,
+                            parse_dates='Time')
+        cached_date = db_df['Time'].dt.strftime("%Y/%m/%d").unique().tolist()
+    else:
+        cached_date = []
+        print("Table 'sales_data' does not exist. Skipping the operation.")
+
+    try:
+        get_data(driver=driver, conn= conn)
+    except Exception as e:
+        print(f"Err: {e} at line {e.__traceback__.tb_lineno}")
+        pass
+    finally:
+        conn.close()
+        # Close the browser
+        driver.quit()
+
+if __name__ == '__main__':
+    main()

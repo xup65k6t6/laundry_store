@@ -2,15 +2,18 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 from datetime import datetime, timedelta
-
-from data_cleaning import read_df_from_db
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import statsmodels.api as sm
 from typing import Union, Tuple, Dict
+import sys
+from pathlib import Path
+# Dynamically find the project root and add it to sys.path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
+from data_processing.data_cleaning import read_df_from_db
 
 class NormalityAnalyzer:
     """
@@ -261,8 +264,7 @@ def plot_daily_sales(daily_sales, cny_dates, days_before=14):
     plt.tight_layout()
     plt.show()
 
-def main():
-    db_path = 'data/database.db'
+def main(db_path:str = 'data/database.db'):
     table_name = 'clean_sales_data'
     df = read_df_from_db(db_path, table_name)
 
@@ -280,3 +282,6 @@ def main():
     #     2024: '2024-02-10'
     # }
     # plot_daily_sales(daily_sales, cny_dates, days_before=2)
+
+if __name__ == "__main__":
+    main()
